@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Data Report (v5.3 - Investigen AI)</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* --- WHITE & BLUE THEME --- */
+        body {
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        .main-card {
+            background-color: #ffffff; /* bg-white */
+        }
+        .filter-box {
+            background-color: #eff6ff; /* bg-blue-50 */
+            border-color: #dbeafe; /* border-blue-200 */
+        }
+        .text-main { color: #374151; } /* text-gray-700 */
+        .text-label { color: #6b7280; } /* text-gray-500 */
+        .text-header { color: #111827; } /* text-gray-900 */
+        
+        /* --- BLUE ACCENT --- */
+        .title {
+            color: #1d4ed8; /* text-blue-700 */
+        }
+        .accent-btn {
+            background-color: #2563eb; /* bg-blue-600 */
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .accent-btn:hover {
+            background-color: #1d4ed8; /* bg-blue-700 */
+        }
+        .accent-text-strong {
+            color: #1d4ed8; /* text-blue-700 */
+        }
+        
+        /* --- LIGHT MODE FILTERS --- */
+        .filter-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #d1d5db; /* border-gray-300 */
+            border-radius: 6px;
+            background-color: #ffffff; /* bg-white */
+            color: #111827; /* text-gray-900 */
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .filter-select:focus {
+            outline: none;
+            border-color: #2563eb; /* border-blue-600 */
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        /* --- YOUR NEW STATUS COLORS --- */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: #f9fafb; /* bg-gray-50 */
+            border: 1px solid #e5e7eb; /* border-gray-200 */
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        .legend-symbol {
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        /* Your new color spec */
+        .status-gaining { background-color: #15803d; color: #ffffff; } /* Dark Green */
+        .status-falling { background-color: #b91c1c; color: #ffffff; } /* Dark Red */
+        .status-higher { background-color: #a7f3d0; color: #000000; } /* Light Green */
+        .status-lower { background-color: #fecaca; color: #000000; } /* Light Red */
+        .status-expected { background-color: #fbbf24; color: #000000; } /* Saffron (Yellow-400) */
+        .status-nan { background-color: #e5e7eb; color: #374151; } /* Gray-200 */
+
+        /* --- PAGINATION (Blue Accent) --- */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .page-btn {
+            cursor: pointer;
+            padding: 8px 14px;
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            background-color: #ffffff; /* bg-white */
+            color: #374151; /* text-gray-700 */
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .page-btn:hover:not(:disabled) {
+            background-color: #f9fafb; /* bg-gray-50 */
+            border-color: #9ca3af; /* border-gray-400 */
+        }
+        .page-btn.active {
+            background-color: #2563eb; /* bg-blue-600 */
+            border-color: #2563eb;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* --- LIGHT TABLE --- */
+        .table-cell {
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .table-header-cell {
+            padding: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-align: left;
+            text-transform: uppercase;
+            color: #4b5563; /* text-gray-600 */
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        /* Zebra-striping */
+        .table-row-dark { background-color: #ffffff; } /* bg-white */
+        .table-row-light { background-color: #f9fafb; } /* bg-gray-50 */
+        /* Hover */
+        .table-row-hover:hover {
+            background-color: #eff6ff; /* bg-blue-50 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8 font-sans">
+
+    <div class="max-w-full mx-auto p-6 rounded-lg shadow-lg main-card">
+        
+        <h1 class="text-3xl font-bold mb-6 title">Portfolio Anomaly Report</h1>
+
+        <div class="legend">
+            <h4 class="text-sm font-semibold w-full mb-2 text-header">Status Legend</h4>
+            <span class="legend-symbol status-gaining">Continuously Gaining</span>
+            <span class="legend-symbol status-falling">Continuously Falling</span>
+            <span class="legend-symbol status-higher">Higher than Expected</span>
+            <span class="legend-symbol status-lower">Lower than Expected</span>
+            <span class="legend-symbol status-expected">As Expected</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6 p-4 rounded-lg border filter-box">
+            <div>
+                <label for="filter-amc" class="block text-xs font-medium mb-1 text-label">AMC</label>
+                <select id="filter-amc" class="filter-select"></select>
+            </div>
+            <div>
+                <label for="filter-month" class="block text-xs font-medium mb-1 text-label">Month</label>
+                <select id="filter-month" class="filter-select"></select>
+            </div>
+            <div>
+                <label for="filter-status" class="block text-xs font-medium mb-1 text-label">Status</label>
+                <select id="filter-status" class="filter-select"></select>
+            </div>
+            <div>
+                <label for="filter-scheme" class="block text-xs font-medium mb-1 text-label">Scheme Type</label>
+                <select id="filter-scheme" class="filter-select"></select>
+            </div>
+            <div>
+                <label for="filter-plan" class="block text-xs font-medium mb-1 text-label">Plan Type</label>
+                <select id="filter-plan" class="filter-select"></select>
+            </div>
+            <div>
+                <label for="filter-investor" class="block text-xs font-medium mb-1 text-label">Investor Type</label>
+                <select id="filter-investor" class="filter-select"></select>
+            </div>
+            <div>
+                <label for="filter-location" class="block text-xs font-medium mb-1 text-label">Location</label>
+                <select id="filter-location" class="filter-select"></select>
+            </div>
+            <div>
+                <label for="filter-contrib" class="block text-xs font-medium mb-1 text-label">Contribution</label>
+                <select id="filter-contrib" class="filter-select"></select>
+            </div>
+        </div>
+        
+        <div class="flex justify-between items-center mb-4">
+            <button id="apply-filters" class="px-6 py-2 rounded-lg transition shadow-lg accent-btn">
+                Apply Filters
+            </button>
+            <div class="text-sm text-main">
+                Showing <strong id="row-count" class="accent-text-strong">0</strong> results.
+            </div>
+        </div>
+        
+        <div id="pagination-controls-top" class="pagination-controls my-4"></div>
+
+        <div class="overflow-x-auto border rounded-lg border-gray-200">
+            <table class="min-w-full">
+                <thead>
+                    <tr>
+                        <th class="table-header-cell">AMC</th>
+                        <th class="table-header-cell">Month</th>
+                        <th class="table-header-cell">Scheme Type</th>
+                        <th class="table-header-cell">Plan Type</th>
+                        <th class="table-header-cell">Investor Type</th>
+                        <th class="table-header-cell">Location</th>
+                        <th class="table-header-cell">Contribution Type</th>
+                        <th class="table-header-cell text-right">AAUM (Cr)</th>
+                        <th class="table-header-cell text-right">Predicted AAUM (Cr)</th>
+                        <th class="table-header-cell text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body">
+                    <tr>
+                        <td colspan="10" class="p-6 text-center text-gray-500">Loading data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="pagination-controls-bottom" class="pagination-controls my-4"></div>
+
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const ROWS_PER_PAGE = 195;
+
+        // Filter elements mapping
+        const filters = {
+            amc: 'filter-amc',
+            month: 'filter-month',
+            status: 'filter-status',
+            scheme: 'filter-scheme',
+            plan: 'filter-plan',
+            investor: 'filter-investor',
+            location: 'filter-location',
+            contrib: 'filter-contrib'
+        };
+
+        // **THE FIX (TRAILING SPACES)**
+        const filterKeys = {
+            amc: 'AMC',
+            month: 'MONTH',
+            status: 'Status',
+            scheme: 'SCHEME TYPE',
+            plan: 'PLAN TYPE ', 
+            investor: 'INVESTOR TYPE ',
+            location: 'LOCATION',
+            contrib: 'CONTRIBUTION TYPE '
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('apply-filters').addEventListener('click', () => {
+                currentPage = 1;
+                runFiltersAndRender();
+            });
+            loadData();
+        });
+
+        async function loadData() {
+            try {
+                // *** IMPORTANT: Make sure your JSON file is named this ***
+                const response = await fetch('Consolidated Amfi AMC Data (Forecasted and Anomaly Detected).json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                allData = await response.json();
+                
+                populateFilters();
+                runFiltersAndRender(); // Initial render
+            } catch (e) {
+                console.error("Failed to load data:", e);
+                document.getElementById('data-table-body').innerHTML = 
+                    `<tr><td colspan="10" class="p-6 text-center text-red-500 font-semibold">
+                        Failed to load 'amfi_forecast_data.json'.<br>
+                        Make sure the file is in the same folder as this HTML file.
+                    </td></tr>`;
+            }
+        }
+
+        function populateFilters() {
+            const uniqueValues = {
+                amc: new Set(),
+                month: new Set(),
+                status: new Set(),
+                scheme: new Set(),
+                plan: new Set(),
+                investor: new Set(),
+                location: new Set(),
+                contrib: new Set()
+            };
+
+            for (const row of allData) {
+                // **THE FIX (TRAILING SPACES)**
+                uniqueValues.amc.add(row['AMC']);
+                uniqueValues.month.add(row['MONTH']);
+                uniqueValues.status.add(row['Status']);
+                uniqueValues.scheme.add(row['SCHEME TYPE']);
+                uniqueValues.plan.add(row['PLAN TYPE ']); 
+                uniqueValues.investor.add(row['INVESTOR TYPE ']);
+                uniqueValues.location.add(row['LOCATION']);
+                uniqueValues.contrib.add(row['CONTRIBUTION TYPE ']);
+            }
+            
+            // Populate all filters
+            Object.keys(filters).forEach(key => {
+                const select = document.getElementById(filters[key]);
+                select.innerHTML = '';
+                
+                let allText = `All ${key.charAt(0).toUpperCase() + key.slice(1)}s`;
+                if (key === 'amc') allText = 'All AMCs';
+                if (key === 'status') allText = 'All Statuses';
+                select.innerHTML += `<option value="all">${allText}</option>`;
+
+                const values = [...uniqueValues[key]].sort();
+                
+                values.forEach(val => {
+                    if (val === undefined) return; 
+                    
+                    const text = val === null ? "N/A" : val;
+                    const value = val === null ? "null" : val;
+                    const selected = (key === 'month' && val === 'August') ? 'selected' : '';
+                    select.innerHTML += `<option value="${value}" ${selected}>${text}</option>`;
+                });
+            });
+        }
+
+        // --- UPDATED getStatusSymbol ---
+        function getStatusSymbol(status) {
+            let text = status || "N/A";
+            let cssClass = 'status-nan';
+
+            if (status === 'Higher Than Expected') {
+                cssClass = 'status-higher';
+                text = 'Higher';
+            } else if (status === 'Lower Than Expected') {
+                cssClass = 'status-lower';
+                text = 'Lower';
+            } else if (status === 'Continuously Falling') {
+                cssClass = 'status-falling';
+                text = 'Falling';
+            } else if (status === 'Continuously Gaining') {
+                cssClass = 'status-gaining';
+                text = 'Gaining';
+            } else if (status === 'As Expected') {
+                cssClass = 'status-expected';
+                text = 'Expected';
+            }
+            
+            // Return a full span with the class
+            return `<span class="legend-symbol ${cssClass}">${text}</span>`;
+        }
+
+        function runFiltersAndRender() {
+            const filterValues = {};
+            Object.keys(filters).forEach(key => {
+                let val = document.getElementById(filters[key]).value;
+                if (val === 'null') val = null;
+                filterValues[key] = val;
+            });
+
+            filteredData = allData.filter(row => {
+                return Object.keys(filterValues).every(key => {
+                    if (filterValues[key] === 'all') return true;
+                    return row[filterKeys[key]] === filterValues[key];
+                });
+            });
+
+            document.getElementById('row-count').textContent = filteredData.length.toLocaleString();
+            renderTable();
+            updatePagination();
+        }
+        
+        function renderTable() {
+            const tableBody = document.getElementById('data-table-body');
+            let html = '';
+
+            const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+            const endIndex = startIndex + ROWS_PER_PAGE;
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+
+            if (paginatedData.length === 0) {
+                html = `<tr><td colspan="10" class="p-6 text-center text-gray-500">No data found for these filters.</td></tr>`;
+            } else {
+                paginatedData.forEach((row, index) => {
+                    const rowClass = (index % 2 === 0) ? 'table-row-dark' : 'table-row-light';
+                    
+                    html += `<tr class="${rowClass} table-row-hover">
+                        <td class="table-cell text-header font-medium">${row['AMC']}</td>
+                        <td class="table-cell text-main">${row['MONTH']}</td>
+                        <td class="table-cell text-main">${row['SCHEME TYPE']}</td>
+                        <td class="table-cell text-main">${row['PLAN TYPE '] || '---'}</td>
+                        <td class="table-cell text-main">${row['INVESTOR TYPE '] || '---'}</td>
+                        <td class="table-cell text-main">${row['LOCATION']}</td>
+                        <td class="table-cell text-main">${row['CONTRIBUTION TYPE '] || '---'}</td>
+                        <td class="table-cell text-header font-mono text-right">${row['AAUM (Cr)'].toLocaleString('en-IN')}</td>
+                        <td class="table-cell text-main font-mono text-right">${row['Predicted AAUM (Cr)']?.toLocaleString('en-IN') || '---'}</td>
+                        <td class="table-cell text-center">${getStatusSymbol(row.Status)}</td>
+                    </tr>`;
+                });
+            }
+            tableBody.innerHTML = html;
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
+            const paginators = [
+                document.getElementById('pagination-controls-top'),
+                document.getElementById('pagination-controls-bottom')
+            ];
+
+            paginators.forEach(paginator => {
+                paginator.innerHTML = ''; 
+                if (totalPages <= 1) return; 
+
+                paginator.innerHTML += `
+                    <button class="page-btn prev-page" ${currentPage === 1 ? 'disabled' : ''}>
+                        &laquo; Prev
+                    </button>`;
+                
+                paginator.innerHTML += `
+                    <span class="text-sm font-medium px-2 text-label">
+                        Page ${currentPage} of ${totalPages}
+                    </span>`;
+                
+                paginator.innerHTML += `
+                    <button class="page-btn next-page" ${currentPage === totalPages ? 'disabled' : ''}>
+                        Next &raquo;
+                    </button>`;
+            });
+            
+            document.querySelectorAll('.prev-page').forEach(btn => btn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                    updatePagination();
+                }
+            }));
+            
+            document.querySelectorAll('.next-page').forEach(btn => btn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                    updatePagination();
+                }
+            }));
+        }
+    </script>
+</body>
+</html>
